@@ -41,6 +41,9 @@ private Q_SLOTS:
 
     void migrateVersion();
     void migrateVersion_data();
+
+    void migrateErrors();
+    void migrateErrors_data();
 };
 
 QtDBMigrationTest::QtDBMigrationTest()
@@ -50,7 +53,7 @@ QtDBMigrationTest::QtDBMigrationTest()
 void QtDBMigrationTest::initTestCase()
 {
     QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE");
-    db.setDatabaseName("test.db");
+    db.setDatabaseName(":memory:");
     db.open();
 }
 
@@ -88,11 +91,14 @@ void QtDBMigrationTest::migrate_data()
     QTest::addColumn<QString>("configPath");
     QTest::addColumn<QStringList>("tableNames");
     QTest::addColumn<int>("finalVer");
-
     QTest::newRow("normal")
         << "test_migrate_1.json"
         << (QStringList() << "table1" << "table2")
         << 1;
+    QTest::newRow("Migrate folder: init -> 0")
+            << qEnvironmentVariable("MIGRATIONS_PATH")
+            << (QStringList() << "newer_contacts" << "test_table1")
+            << 2;
 }
 
 void QtDBMigrationTest::migrateVersion()
@@ -121,7 +127,6 @@ void QtDBMigrationTest::migrateVersion_data()
     QTest::addColumn<QString>("configPath");
     QTest::addColumn<QList<int> >("stepVersions");
     QTest::addColumn<QStringList>("finalTableNames");
-
     QTest::newRow("Migrate: init -> 0")
         << "test_migrate_1.json"
         << (QList<int>() << 0)
@@ -134,6 +139,23 @@ void QtDBMigrationTest::migrateVersion_data()
         << "test_migrate_1.json"
         << (QList<int>() << 0 << 1 << 0)
         << (QStringList() << "table1");
+
+}
+void QtDBMigrationTest::migrateErrors()
+{
+    QFETCH(QString, configPath);
+
+    QtDBMigration mig(configPath);
+    bool ok = mig.migrate();
+    QVERIFY(!ok);
+}
+void QtDBMigrationTest::migrateErrors_data()
+{
+    QTest::addColumn<QString>("configPath");
+    QTest::newRow("Invalid path form")
+            << "random stirng not path";
+    QTest::newRow("Valid but empty path")
+            << QTemporaryDir();
 }
 
 QTEST_APPLESS_MAIN(QtDBMigrationTest)

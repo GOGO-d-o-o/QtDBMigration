@@ -51,6 +51,9 @@ bool JsonConfig::load()
 
     QJsonArray schemaVersions = schemaVersionsRaw.toArray();
     QJsonArray::iterator it = schemaVersions.begin();
+    QStringList applySqlList;
+    QStringList revertSqlList;
+
     for (; it != schemaVersions.end(); ++it) {
         QJsonValue val = *it;
 
@@ -67,13 +70,22 @@ bool JsonConfig::load()
         if (!applySql.isString()) {
             continue;
         }
+        else
+        {
+            applySqlList.append(applySql.toString());
+        }
+
         QJsonValue revertSql = schemaVersion.value("revertSql");
         if (!revertSql.isString()) {
             continue;
         }
+        else
+        {
+            revertSqlList.append(revertSql.toString());
+        }
 
         m_schemaVersions << new SchemaVersion(
-            version.toInt(), applySql.toString(), revertSql.toString());
+            version.toInt(), applySqlList, revertSqlList);
     }
 
     return true;

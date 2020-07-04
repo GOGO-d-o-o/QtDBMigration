@@ -31,7 +31,7 @@ class SchemaVersion
 {
 public:
     SchemaVersion(int version,
-                  const QString &applySql, const QString &revertSql);
+                  const QStringList &applySql, const QStringList &revertSql);
 
     int version() const { return m_version; }
 
@@ -39,10 +39,11 @@ public:
     bool revert(const QSqlDatabase &db = QSqlDatabase::database());
 
 private:
+    QString transactionBlock(QString query);
     int m_version;
 
-    QString m_applySql;
-    QString m_revertSql;
+    QStringList m_applySql;
+    QStringList m_revertSql;
 };
 
 }

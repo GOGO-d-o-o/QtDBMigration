@@ -35,12 +35,14 @@ public:
 
     QtDBMigration(const QString &configPath = QtDBMigration::DEFAULT_CONFIG,
                   const QSqlDatabase &db = QSqlDatabase::database());
+
     ~QtDBMigration();
 
     bool migrate();
     bool migrate(int version);
 
     int version();
+
 
 private:
     static const int EMPTY_VERSION = -1;

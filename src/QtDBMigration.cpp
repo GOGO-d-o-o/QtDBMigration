@@ -22,6 +22,7 @@
 #include "AbstractConfig.h"
 #include "JsonConfig.h"
 #include "QtDBMigration.h"
+#include "FolderConfig.h"
 
 using namespace QtDBMigrationNS;
 
@@ -35,6 +36,7 @@ public:
     int version();
     bool migrate();
     bool migrate(int version);
+    void setConfig(QString path);
 
 private:
     bool createMetaTable();
@@ -43,10 +45,24 @@ private:
     AbstractConfig *m_config;
 };
 
+void QtDBMigrationPrivate::setConfig(QString path) {
+    if (QFileInfo::exists(path))
+    {
+        QFileInfo inputPath(path);
+        if (inputPath.isDir() && inputPath.exists()) {
+        m_config = new FolderConfig(path);
+        }
+    }
+    else  {
+        m_config = new JsonConfig(path);
+ }
+}
+
 QtDBMigrationPrivate::QtDBMigrationPrivate(QtDBMigration *q) :
-    m_q(q) ,
-    m_config(new JsonConfig(q->m_configPath))
+    m_q(q)
 {
+
+    setConfig(q->m_configPath);
     // Load config
     if (!m_config->load()) {
         qWarning() << "Fail to load migration config";
@@ -61,7 +77,6 @@ QtDBMigrationPrivate::~QtDBMigrationPrivate()
 int QtDBMigrationPrivate::version()
 {
     int curVer = QtDBMigration::EMPTY_VERSION;
-
     QSqlQuery q(m_q->m_db);
     q.prepare("select cur_ver from qtdbmigration_meta limit 1");
     if (!q.exec()) {
@@ -93,6 +108,7 @@ bool QtDBMigrationPrivate::migrate()
     return migrate(latestVersion);
 }
 
+
 bool QtDBMigrationPrivate::migrate(int destVer)
 {
     int curVer = version();
@@ -111,6 +127,10 @@ bool QtDBMigrationPrivate::migrate(int destVer)
                 qWarning() << "Fail to apply schema version:" << i
                            << ", aborting...";
                 return false;
+            }
+            else
+            {
+                qInfo() << "Migration successfull!! Version is:" << i;
             }
         }
     } else if (curVer > destVer) {
@@ -133,6 +153,7 @@ bool QtDBMigrationPrivate::migrate(int destVer)
     return true;
 }
 
+
 bool QtDBMigrationPrivate::createMetaTable()
 {
     QSqlQuery q(m_q->m_db);
@@ -150,6 +171,7 @@ bool QtDBMigrationPrivate::createMetaTable()
     return true;
 }
 
+
 const char * QtDBMigration::DEFAULT_CONFIG = "migration.json";
 
 QtDBMigration::QtDBMigration(const QString &configPath,
@@ -159,6 +181,8 @@ QtDBMigration::QtDBMigration(const QString &configPath,
     m_p(new QtDBMigrationPrivate(this))
 {
 }
+
+
 
 QtDBMigration::~QtDBMigration()
 {
